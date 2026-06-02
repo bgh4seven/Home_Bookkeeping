@@ -8,6 +8,7 @@ public class Main extends Application {
 
     public static void main(String[] args) {
         launch(args);  // стандартный запуск JavaFX
+        System.out.println("test commit2");
     }
 
     @Override
