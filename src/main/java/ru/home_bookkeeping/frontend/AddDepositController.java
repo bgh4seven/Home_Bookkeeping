@@ -17,21 +17,21 @@ public class AddDepositController {
     @FXML private Button okButton;
     @FXML private Button cancelButton;
 
-    private Deposit createdDeposit; // сюда сохраним результат
+    private Deposit createdDeposit; // здесь хранится результат
 
     @FXML
     public void initialize() {
-        // Установи сегодняшнюю дату по умолчанию
+        //Установка сегодняшней даты по умолчанию
         datePicker.setValue(LocalDate.now());
 
         // Действие на кнопку Cancel
         cancelButton.setOnAction(event -> {
-            // Закрыть окно (нужно получить доступ к Stage, пока сделаем позже)
+            //Доделать
             closeDialog();
         });
     }
 
-    // Метод, который будет вызываться при нажатии OK (привяжи в FXML)
+    // Действие на кнопку ок
     @FXML
     private void okButton() {
         try {
@@ -41,7 +41,7 @@ public class AddDepositController {
             int days = Integer.parseInt(daysField.getText());
             LocalDate openDate = datePicker.getValue();
 
-            // Временно номер = 0, потом MainController сам назначит номер
+            //Номер потом переназначается в МейнКонтроллере
             createdDeposit = new Deposit(0, bank, amount, percent, days, openDate);
             closeDialog();
         } catch (NumberFormatException e) {
@@ -51,13 +51,13 @@ public class AddDepositController {
         }
     }
 
-    // Закрывает окно, в котором находится этот контроллер
+    // Закрывает окно
     @FXML
     private void closeDialog() {
         okButton.getScene().getWindow().hide();
     }
 
-    // Этот метод вызовет главный контроллер, чтобы забрать созданный вклад
+    // МейнКонтроллер этим методом забирает созданный вклад
     public Deposit getCreatedDeposit() {
         return createdDeposit;
     }
