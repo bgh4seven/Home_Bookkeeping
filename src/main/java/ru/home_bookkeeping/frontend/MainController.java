@@ -19,11 +19,9 @@ import java.util.List;
 public class MainController {
     private DataBase db = new DataBase();
 
-
     // Сама таблица
     @FXML
     private TableView<Deposit> depositTable;
-
 
     // Столбцы таблицы (имена должны совпадать с fx:id, заданными в Scene Builder)
     @FXML
@@ -106,7 +104,6 @@ public class MainController {
 
     private void showAddDepositDialog() throws Exception {
         try {
-            // Загружаем FXML
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/add-deposit-view.fxml"));
             Parent root = loader.load();
 
