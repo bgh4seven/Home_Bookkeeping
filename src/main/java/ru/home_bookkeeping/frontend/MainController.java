@@ -106,6 +106,7 @@ public class MainController {
 
     private void showAddDepositDialog() throws Exception {
         try {
+            // Загружаем FXML
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/add-deposit-view.fxml"));
             Parent root = loader.load();
 
