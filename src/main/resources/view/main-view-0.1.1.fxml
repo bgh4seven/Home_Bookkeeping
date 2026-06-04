@@ -10,11 +10,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="600.0" minWidth="800.0" prefHeight="768.0" prefWidth="1024.0"
-            xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="MainController"
-            stylesheets="/styles/main.css">
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="600.0" minWidth="800.0" prefHeight="768.0" prefWidth="1024.0" stylesheets="/styles/main.css" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ru.home_bookkeeping.frontend.MainController">
    <children>
       <TabPane layoutX="88.0" prefHeight="200.0" prefWidth="200.0" tabClosingPolicy="UNAVAILABLE" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
         <tabs>
@@ -48,11 +44,12 @@
                                 <columns>
                                   <TableColumn fx:id="numberColumn" prefWidth="37.0" text="№" />
                                   <TableColumn fx:id="bankColumn" prefWidth="113.0" text="Банк" />
-                                    <TableColumn fx:id="percentColumn" prefWidth="48.0" text="\%" />
-                                    <TableColumn fx:id="srokColumn" prefWidth="102.0" text="Срок вклада" />
-                                    <TableColumn fx:id="startDateColumn" prefWidth="111.0" text="Дата открытия" />
-                                    <TableColumn fx:id="endDateColumn" prefWidth="110.0" text="Дата погашения" />
-                                    <TableColumn fx:id="expectedIncomeColumn" prefWidth="191.0" text="Ожидаемая доходность" />
+                                    <TableColumn fx:id="amountColumn" prefWidth="220.0" text="Сумма" />
+                                    <TableColumn fx:id="percentColumn" prefWidth="59.0" text="\%" />
+                                    <TableColumn fx:id="srokColumn" prefWidth="94.0" text="Срок вклада" />
+                                    <TableColumn fx:id="startDateColumn" prefWidth="126.0" text="Дата открытия" />
+                                    <TableColumn fx:id="endDateColumn" prefWidth="112.0" text="Дата погашения" />
+                                    <TableColumn fx:id="expectedIncomeColumn" prefWidth="255.0" text="Ожидаемая доходность" />
                                 </columns>
                               </TableView>
                            </children>
