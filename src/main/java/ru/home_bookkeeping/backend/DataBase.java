@@ -21,9 +21,9 @@ import java.util.Map;
 public class DataBase {
     // Ключ — порядковый номер вклада, значение — объект Deposit
     private Map<Integer, Deposit> deposits;
-    //Путь к файлу базы данных
-    private Path dbPath = Paths.get("src/main/resources/db_deposit.json");
-    //Создание Gson для работы с db
+    //Путь к файлу базы данных депозитов
+    private Path dbDepositPath = Paths.get("src/main/resources/db_deposit.json");
+    //Создание Gson для работы с db (общий для всех db)
     private static Gson gson = new GsonBuilder()
             .registerTypeAdapter(LocalDate.class, new LocalDateAdapter())
             .setPrettyPrinting()
@@ -31,7 +31,7 @@ public class DataBase {
 
     //Инициализатор, запустится при создании экземпляра класса, подгрузит дб
     {
-        deposits = readDB(dbPath);
+        deposits = readDB(dbDepositPath);
     }
 
     /**
@@ -72,7 +72,7 @@ public class DataBase {
     }
 
     public void writeDB() {
-        try (FileWriter writer = new FileWriter(dbPath.toFile())) {
+        try (FileWriter writer = new FileWriter(dbDepositPath.toFile())) {
             String db = gson.toJson(deposits);
             writer.write(db);
             writer.flush();
@@ -82,23 +82,13 @@ public class DataBase {
         }
     }
 
-    /**
-     * Возвращает объект Deposit из Map по порядковому номеру.
-     * Если вклад с таким номером не найден — возвращает null.
-     *
-     * @param number Порядковый номер вклада
-     * @return Deposit или null
-     */
-    public Deposit getDeposit(int number) {
-        return deposits.get(number);
-    }
 
     // Возвращает все вклады в виде коллекции (для таблицы)
     public List<Deposit> getAllDeposits() {
         return new ArrayList<>(deposits.values());
     }
 
-    // Возвращает следующий свободный номер вклада
+    // Возвращает следующий свободный номер вклада. Нужен, чтобы вклады создавались с разными номерами
     public int getNextNumber() {
         if (deposits.isEmpty()) return 1;
         int max = 0;
