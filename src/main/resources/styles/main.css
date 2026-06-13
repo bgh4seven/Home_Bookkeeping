@@ -3,6 +3,12 @@
     -fx-background-color: #7ff2fa;
 }
 
+/* Нижняя панель с кнопкой редактирования */
+.bottom-panel {
+    -fx-padding: 5 10 5 10;
+    -fx-background-color: transparent; /* полностью прозрачный фон — панель сливается с окном */
+}
+
 .menu-bar {
     -fx-background-color: #e0e0e0;
 }

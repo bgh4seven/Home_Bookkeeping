@@ -13,10 +13,6 @@ public class Deposit {
     private LocalDate closeDate; // Дата закрытия (рассчитывается автоматически)
     private double income;       // Ожидаемый доход (рассчитывается автоматически)
 
-    public void setBankName(String s) {
-        this.bankName = s;
-    }
-
     /**
      * Конструктор. Принимает основные параметры вклада,
      * автоматически вычисляет дату закрытия и ожидаемый доход.
@@ -88,5 +84,38 @@ public class Deposit {
     /** Возвращает ожидаемый доход (рассчитан автоматически) */
     public double getIncome() {
         return income;
+    }
+
+    // ───── Сеттеры ─────────────────────────────────────────────
+    public void setNumber(int number) {
+        this.number = number;
+    }
+
+    public void setBankName(String bankName) {
+        this.bankName = bankName;
+    }
+
+    public void setAmount(double amount) {
+        this.amount = amount;
+    }
+
+    public void setPercent(double percent) {
+        this.percent = percent;
+    }
+
+    public void setDays(int days) {
+        this.days = days;
+    }
+
+    public void setOpenDate(LocalDate openDate) {
+        this.openDate = openDate;
+    }
+
+    public void setCloseDate(LocalDate closeDate) {
+        this.closeDate = closeDate;
+    }
+
+    public void setIncome(double income) {
+        this.income = income;
     }
 }

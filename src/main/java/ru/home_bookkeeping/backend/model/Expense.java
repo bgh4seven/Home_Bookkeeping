@@ -28,6 +28,8 @@ public class Expense {
         this.amount   = amount;
         this.category = category;
     }
+    //Нужен пустой конструктор для Gson
+    public Expense() {}
 
     // ───── Геттеры ─────────────────────────────────────────────
 
@@ -47,4 +49,17 @@ public class Expense {
     public static HashSet<String> getCategories() {
         return categories;
 }
+
+    // ───── Сеттеры ─────────────────────────────────────────────
+    public void setNumber(int number) {
+        this.number = number;
+    }
+
+    public void setAmount(double amount) {
+        this.amount = amount;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
 }
