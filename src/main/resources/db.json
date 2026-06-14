@@ -1,0 +1,127 @@
+{
+  "deposits": {
+    "1": {
+      "number": 1,
+      "bankName": "q",
+      "amount": 1.0,
+      "percent": 1.0,
+      "days": 1,
+      "openDate": "2026-06-14",
+      "closeDate": "2026-06-15",
+      "income": 2.7397260273972603E-5
+    },
+    "3": {
+      "number": 3,
+      "bankName": "4",
+      "amount": 5.0,
+      "percent": 6.0,
+      "days": 7,
+      "openDate": "2026-06-14",
+      "closeDate": "2026-06-21",
+      "income": 0.005753424657534247
+    },
+    "4": {
+      "number": 4,
+      "bankName": "втб",
+      "amount": 3000.0,
+      "percent": 4.0,
+      "days": 1,
+      "openDate": "2026-06-14",
+      "closeDate": "2026-06-15",
+      "income": 3.2876712328767124E-4
+    },
+    "5": {
+      "number": 5,
+      "bankName": "1",
+      "amount": 2.0,
+      "percent": 3.0,
+      "days": 4,
+      "openDate": "2026-06-14",
+      "closeDate": "2026-06-18",
+      "income": 6.575342465753425E-4
+    }
+  },
+  "credits": {
+    "1": {
+      "number": 1,
+      "bankName": "vtb",
+      "initialAmount": 10000.0,
+      "remainingAmount": 10000.0,
+      "monthlyPayment": 100.0,
+      "percent": 12.0,
+      "months": 24,
+      "openDate": "2026-06-14",
+      "closeDate": "2028-06-14",
+      "overpayment": -7600.0
+    }
+  },
+  "expenses": {
+    "1": {
+      "number": 1,
+      "amount": 20000.0,
+      "category": "Транспорт"
+    },
+    "2": {
+      "number": 2,
+      "amount": 123.0,
+      "category": "Здоровье и медицина"
+    },
+    "3": {
+      "number": 3,
+      "amount": 1.0,
+      "category": "Прочее"
+    },
+    "4": {
+      "number": 4,
+      "amount": 2.0,
+      "category": "Прочее"
+    },
+    "5": {
+      "number": 5,
+      "amount": 543.0,
+      "category": "Прочее"
+    },
+    "6": {
+      "number": 6,
+      "amount": 426.0,
+      "category": "Прочее"
+    },
+    "7": {
+      "number": 7,
+      "amount": 64.0,
+      "category": "Прочее"
+    },
+    "8": {
+      "number": 8,
+      "amount": 46634.0,
+      "category": "Прочее"
+    },
+    "9": {
+      "number": 9,
+      "amount": 63643.0,
+      "category": "Прочее"
+    },
+    "10": {
+      "number": 10,
+      "amount": 64436.0,
+      "category": "Прочее"
+    },
+    "11": {
+      "number": 11,
+      "amount": 366436.0,
+      "category": "Прочее"
+    }
+  },
+  "incomes": {
+    "1": {
+      "number": 1,
+      "amount": 12314.0,
+      "source": "Пособие / Стипендия"
+    },
+    "2": {
+      "number": 2,
+      "amount": 512365.0,
+      "source": "Зарплата"
+    }
+  }
+}
