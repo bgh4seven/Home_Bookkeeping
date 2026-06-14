@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+
+<GridPane hgap="10.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="450.0" prefWidth="600.0" vgap="10.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ru.home_bookkeeping.frontend.AddCreditController">
+    <columnConstraints>
+        <ColumnConstraints halignment="RIGHT" hgrow="SOMETIMES" minWidth="10.0" prefWidth="120.0" />
+        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="200.0" />
+    </columnConstraints>
+    <rowConstraints>
+        <RowConstraints />
+        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+    </rowConstraints>
+    <padding>
+        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+    </padding>
+    <children>
+        <Label text="Банк" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+        <Label text="Сумма кредита" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+        <Label text="Процентная ставка" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+        <Label text="Ежемесячный платёж" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+        <Label text="Срок (месяцы)" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+        <Label text="Дата открытия" GridPane.columnIndex="0" GridPane.rowIndex="6" />
+
+        <TextField fx:id="bankField" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+        <TextField fx:id="amountField" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+        <TextField fx:id="percentField" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+        <TextField fx:id="monthlyPaymentField" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+        <TextField fx:id="monthsField" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+        <DatePicker fx:id="openDatePicker" GridPane.columnIndex="1" GridPane.rowIndex="6" />
+
+        <HBox spacing="10.0" GridPane.columnIndex="1" GridPane.rowIndex="7">
+            <children>
+                <Button fx:id="cancelButton" mnemonicParsing="false" onAction="#handleCancel" text="Отмена" />
+                <Button fx:id="okButton" mnemonicParsing="false" onAction="#handleOk" text="Добавить" />
+            </children>
+        </HBox>
+    </children>
+</GridPane>

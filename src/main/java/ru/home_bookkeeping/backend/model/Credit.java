@@ -44,6 +44,8 @@ public class Credit {
         // Переплата = ежемесячный_платёж × срок - начальная_сумма
         this.overpayment = monthlyPayment * months - initialAmount;
     }
+    //Нужен пустой конструктор для Gson
+    public Credit() {}
 
     // ───── Геттеры ─────────────────────────────────────────────
 
@@ -85,6 +87,47 @@ public class Credit {
 
     public double getOverpayment() {
         return overpayment;
+    }
+
+    // ───── Сеттеры ─────────────────────────────────────────────
+    public void setNumber(int number) {
+        this.number = number;
+    }
+
+    public void setBankName(String bankName) {
+        this.bankName = bankName;
+    }
+
+    public void setInitialAmount(double initialAmount) {
+        this.initialAmount = initialAmount;
+    }
+
+    public void setRemainingAmount(double remainingAmount) {
+        this.remainingAmount = remainingAmount;
+    }
+
+    public void setMonthlyPayment(double monthlyPayment) {
+        this.monthlyPayment = monthlyPayment;
+    }
+
+    public void setPercent(double percent) {
+        this.percent = percent;
+    }
+
+    public void setMonths(int months) {
+        this.months = months;
+    }
+
+    public void setOpenDate(LocalDate openDate) {
+        this.openDate = openDate;
+    }
+
+    public void setCloseDate(LocalDate closeDate) {
+        this.closeDate = closeDate;
+    }
+
+    public void setOverpayment(double overpayment) {
+        this.overpayment = overpayment;
     }
 
     // ───── Методы ──────────────────────────────────────────────

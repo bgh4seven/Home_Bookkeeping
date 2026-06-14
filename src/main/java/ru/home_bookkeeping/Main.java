@@ -15,7 +15,7 @@ public class Main extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         // Загружаем FXML-файл (разметка окна)
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/main-view-0.1.1.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/main-view-0.1.2.fxml"));
         Parent root = loader.load();
 
         //Создание контейнера для визуала
@@ -29,3 +29,5 @@ public class Main extends Application {
 
 
 }
+
+//Модели от абстракции сделать, чтобы в дбконтроллере сделать общие методы

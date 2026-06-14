@@ -29,6 +29,8 @@ public class Income {
             this.amount = amount;
             this.source = source;
         }
+    //Нужен пустой конструктор для Gson
+    public Income() {}
 
         // ───── Геттеры ─────────────────────────────────────────────
 
@@ -50,4 +52,17 @@ public class Income {
         public static HashSet<String> getSources() {
             return sources;
         }
+
+    // ───── Сеттеры ─────────────────────────────────────────────
+    public void setNumber(int number) {
+        this.number = number;
+    }
+
+    public void setAmount(double amount) {
+        this.amount = amount;
+    }
+
+    public void setSource(String source) {
+        this.source = source;
+    }
     }
