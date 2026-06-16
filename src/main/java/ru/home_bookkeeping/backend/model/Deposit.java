@@ -8,7 +8,7 @@ public class Deposit {
     private String bankName;     // Наименование банка
     private double amount;       // Сумма вклада
     private double percent;      // Процентная ставка (% годовых)
-    private int days;            // Срок вклада в днях
+    private int months;            // Срок вклада в месяцах
     private LocalDate openDate;  // Дата открытия
     private LocalDate closeDate; // Дата закрытия (рассчитывается автоматически)
     private double income;       // Ожидаемый доход (рассчитывается автоматически)
@@ -21,24 +21,24 @@ public class Deposit {
      * @param bankName Наименование банка
      * @param amount   Сумма вклада (в рублях)
      * @param percent  Годовая процентная ставка
-     * @param days     Срок вклада в днях
+     * @param months     Срок вклада в месяцах
      * @param openDate Дата открытия вклада
      */
     public Deposit(int number, String bankName, double amount,
-                   double percent, int days, LocalDate openDate) {
+                   double percent, int months, LocalDate openDate) {
         this.number   = number;
         this.bankName = bankName;
         this.amount   = amount;
         this.percent  = percent;
-        this.days     = days;
+        this.months     = months;
         this.openDate = openDate;
 
         // Расчёт даты закрытия: дата открытия + срок в днях
-        this.closeDate = openDate.plusDays(days);
+        this.closeDate = openDate.plusMonths(months);
 
         // Расчёт ожидаемого дохода по формуле простых процентов:
-        // income = amount * (percent / 100) * (days / 365)
-        this.income = amount * (percent / 100.0) * (days / 365.0);
+        // income = amount * (percent / 100) * (months / 12)
+        this.income = amount * (percent / 100.0) * (months / 12.0);
     }
     public Deposit() {
         // пустой конструктор нужен для Gson
@@ -67,8 +67,8 @@ public class Deposit {
     }
 
     /** Возвращает срок вклада в днях */
-    public int getDays() {
-        return days;
+    public int getMonths() {
+        return months;
     }
 
     /** Возвращает дату открытия */
@@ -103,8 +103,8 @@ public class Deposit {
         this.percent = percent;
     }
 
-    public void setDays(int days) {
-        this.days = days;
+    public void setMonths(int months) {
+        this.months = months;
     }
 
     public void setOpenDate(LocalDate openDate) {

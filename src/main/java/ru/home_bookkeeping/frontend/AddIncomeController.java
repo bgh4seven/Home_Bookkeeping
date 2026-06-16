@@ -3,6 +3,8 @@ package ru.home_bookkeeping.frontend;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import ru.home_bookkeeping.backend.model.Income;
+
+import java.time.LocalDate;
 import java.util.HashSet;
 
 public class AddIncomeController {
@@ -27,11 +29,12 @@ public class AddIncomeController {
         try {
             double amount = Double.parseDouble(amountField.getText());
             String source = sourceComboBox.getValue();
+
             if (source == null || source.isEmpty()) {
                 showError("Выберите источник дохода");
                 return;
             }
-            createdIncome = new Income(0, amount, source);
+            createdIncome = new Income(0, amount, source, LocalDate.now());
             closeDialog();
         } catch (NumberFormatException e) {
             showError("Введите корректную сумму");

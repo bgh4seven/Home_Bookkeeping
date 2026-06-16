@@ -149,7 +149,7 @@ public class MainController {
                 int newNumber = db.getNextDepositNumber();
                 // Создаём вклад с правильным номером
                 db.addDeposit(newNumber, newDeposit.getBankName(), newDeposit.getAmount(),
-                        newDeposit.getPercent(), newDeposit.getDays(), newDeposit.getOpenDate());
+                        newDeposit.getPercent(), newDeposit.getMonths(), newDeposit.getOpenDate());
                 db.writeDB();
                 refreshDepositTable();
             }
@@ -269,7 +269,7 @@ public class MainController {
             Income newIncome = controller.getCreatedIncome();
             if (newIncome != null) {
                 int newNumber = db.getNextIncomeNumber();
-                db.addIncome(newNumber, newIncome.getAmount(), newIncome.getSource());
+                db.addIncome(newNumber, newIncome.getAmount(), newIncome.getSource(),newIncome.getDate());
                 db.writeDB();
                 refreshIncomeTable();
             }
@@ -324,7 +324,7 @@ public class MainController {
             Expense newExpense = controller.getCreatedExpense();
             if (newExpense != null) {
                 int newNumber = db.getNextExpenseNumber();
-                db.addExpense(newNumber, newExpense.getAmount(), newExpense.getCategory());
+                db.addExpense(newNumber, newExpense.getAmount(), newExpense.getCategory(), newExpense.getDate());
                 db.writeDB();
                 refreshExpenseTable();
             }
@@ -391,11 +391,11 @@ public class MainController {
         dep_srokColumn.setCellFactory(TextFieldTableCell.forTableColumn(new IntegerStringConverter()));
         dep_srokColumn.setOnEditCommit(event -> {
             Deposit d = event.getRowValue();
-            int newDays = event.getNewValue();
-            d.setDays(newDays);
+            int newMonths = event.getNewValue();
+            d.setMonths(newMonths);
             // Пересчёт даты закрытия и дохода
-            d.setCloseDate(d.getOpenDate().plusDays(newDays));
-            d.setIncome(d.getAmount() * (d.getPercent() / 100.0) * (newDays / 365.0));
+            d.setCloseDate(d.getOpenDate().plusDays(newMonths));
+            d.setIncome(d.getAmount() * (d.getPercent() / 100.0) * (newMonths / 12.0));
             db.writeDB();
             refreshDepositTable();
         });

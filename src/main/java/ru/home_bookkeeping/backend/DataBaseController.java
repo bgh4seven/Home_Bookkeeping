@@ -14,6 +14,7 @@ import java.util.Map;
 
 
 public class DataBaseController {
+
     //Путь к файлам баз данных
     private Path dbPath = Paths.get("src/main/resources/db.json");
     //Сюда подгружается дб во время работы программы
@@ -23,6 +24,7 @@ public class DataBaseController {
     private Map<Integer, Income> incomes = db.getIncomes();
     private Map<Integer, Expense> expenses = db.getExpenses();
 
+
     //Создание Gson для работы с db (общий для всех db)
     private static Gson gson = new GsonBuilder()
             .registerTypeAdapter(LocalDate.class, new LocalDateAdapter())
@@ -31,8 +33,8 @@ public class DataBaseController {
 
 
     public void addDeposit(int number, String bankName, double amount,
-                           double percent, int days, LocalDate openDate) {
-        Deposit deposit = new Deposit(number, bankName, amount, percent, days, openDate);
+                           double percent, int months, LocalDate openDate) {
+        Deposit deposit = new Deposit(number, bankName, amount, percent, months, openDate);
         deposits.put(number, deposit);
     }
 
@@ -54,7 +56,14 @@ public class DataBaseController {
         }
         return max + 1;
     }
-
+    // Считает общую сумму всех вкладов
+    public double getTotalDeposits() {
+        double total = 0;
+        for (Deposit deposit : deposits.values()) {
+            total += deposit.getAmount();
+        }
+        return total;
+    }
 
     public void addCredit(int number, String bankName, double initialAmount,
                           double percent, double monthlyPayment, int months, LocalDate openDate) {
@@ -79,9 +88,17 @@ public class DataBaseController {
         return max + 1;
     }
 
+    // Считает общую задолженность по всем кредитам (сумма remainingAmount)
+    public double getTotalCreditDebt() {
+        double total = 0;
+        for (Credit credit : credits.values()) {
+            total += credit.getRemainingAmount();
+        }
+        return total;
+    }
 
-    public void addIncome(int number, double amount, String source) {
-        Income income = new Income(number, amount, source);
+    public void addIncome(int number, double amount, String source, LocalDate date) {
+        Income income = new Income(number, amount, source,date);
         incomes.put(number, income);
     }
 
@@ -101,9 +118,20 @@ public class DataBaseController {
         }
         return max + 1;
     }
+    // Считает сумму доходов за определённый месяц и год
+    public double getIncomeForMonth(int month, int year) {
+        double total = 0;
+        for (Income income : incomes.values()) {
+            if (income.getDate().getMonthValue() == month
+                    && income.getDate().getYear() == year) {
+                total += income.getAmount();
+            }
+        }
+        return total;
+    }
 
-    public void addExpense(int number, double amount, String category) {
-        Expense expense = new Expense(number, amount, category);
+    public void addExpense(int number, double amount, String category, LocalDate date) {
+        Expense expense = new Expense(number, amount, category,date);
         expenses.put(number, expense);
     }
 
@@ -123,6 +151,17 @@ public class DataBaseController {
         }
         return max + 1;
     }
+    // Считает сумму расходов за определённый месяц и год
+    public double getExpenseForMonth(int month, int year) {
+        double total = 0;
+        for (Expense expense : expenses.values()) {
+            if (expense.getDate().getMonthValue() == month
+                    && expense.getDate().getYear() == year) {
+                total += expense.getAmount();
+            }
+        }
+        return total;
+    }
 
     private Database readDB(Path path) {
         Database holder = new Database();
@@ -135,7 +174,6 @@ public class DataBaseController {
         }
         return holder;
     }
-
 
 
     public void writeDB() {
