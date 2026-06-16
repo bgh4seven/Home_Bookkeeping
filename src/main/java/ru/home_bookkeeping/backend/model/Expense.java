@@ -1,10 +1,12 @@
 package ru.home_bookkeeping.backend.model;
 import java.util.HashSet;
+import java.time.LocalDate;
 
 public class Expense {
     private int number;        // Номер по порядку
     private double amount;     // Сумма расхода
     private String category;   // Категория расхода
+    private LocalDate date;    // Дата расхода
     private static final HashSet<String> categories = new HashSet<>() {{
         add("Продукты");
         add("Транспорт");
@@ -22,11 +24,13 @@ public class Expense {
      * @param number   Порядковый номер записи
      * @param amount   Сумма расхода
      * @param category Категория расхода
+     * @param date     Дата расхода
      */
-    public Expense(int number, double amount, String category) {
+    public Expense(int number, double amount, String category, LocalDate date) {
         this.number   = number;
         this.amount   = amount;
         this.category = category;
+        this.date  = date;
     }
     //Нужен пустой конструктор для Gson
     public Expense() {}
@@ -43,6 +47,9 @@ public class Expense {
 
     public String getCategory() {
         return category;
+    }
+    public LocalDate getDate() {
+        return date;
     }
 
     /** Статический геттер — возвращает доступные категории расходов */
