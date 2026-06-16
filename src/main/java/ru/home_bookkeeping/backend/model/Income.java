@@ -50,9 +50,9 @@ public class Income {
         public String getSource() {
             return source;
         }
-        public LocalDate getDate() { return date; }
 
         public LocalDate getDate() { return date; }
+
 
         /**
          * Статический геттер — возвращает доступные источники дохода

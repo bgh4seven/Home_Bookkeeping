@@ -132,7 +132,7 @@ public class DataBaseController {
     }
 
     public void addExpense(int number, double amount, String category, LocalDate date) {
-        Expense expense = new Expense(number, amount, category,date);
+        Expense expense = new Expense(number, amount, category, date);
         expenses.put(number, expense);
     }
 

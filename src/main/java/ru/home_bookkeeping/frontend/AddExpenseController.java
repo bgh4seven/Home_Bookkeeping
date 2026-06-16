@@ -3,7 +3,6 @@ package ru.home_bookkeeping.frontend;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import ru.home_bookkeeping.backend.model.Expense;
-
 import java.time.LocalDate;
 import java.util.HashSet;
 
@@ -11,6 +10,7 @@ public class AddExpenseController {
 
     @FXML private TextField amountField;
     @FXML private ComboBox<String> categoryComboBox;
+    @FXML private DatePicker datePicker;
     @FXML private Button cancelButton;
     @FXML private Button okButton;
 
@@ -22,6 +22,7 @@ public class AddExpenseController {
         categoryComboBox.getItems().addAll(categories);
         if (!categoryComboBox.getItems().isEmpty())
             categoryComboBox.getSelectionModel().selectFirst();
+        datePicker.setValue(LocalDate.now());
     }
 
     @FXML
@@ -29,11 +30,12 @@ public class AddExpenseController {
         try {
             double amount = Double.parseDouble(amountField.getText());
             String category = categoryComboBox.getValue();
-            if (category == null || category.isEmpty()) {
-                showError("Выберите категорию расхода");
+            LocalDate date = datePicker.getValue();
+            if (category == null || category.isEmpty() || date == null) {
+                showError("Выберите категорию и дату");
                 return;
             }
-            createdExpense = new Expense(0, amount, category, LocalDate.now());
+            createdExpense = new Expense(0, amount, category, date);
             closeDialog();
         } catch (NumberFormatException e) {
             showError("Введите корректную сумму");
