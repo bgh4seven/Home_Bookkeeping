@@ -3,6 +3,8 @@ package ru.home_bookkeeping.frontend;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import ru.home_bookkeeping.backend.model.Expense;
+
+import java.time.LocalDate;
 import java.util.HashSet;
 
 public class AddExpenseController {
@@ -31,7 +33,7 @@ public class AddExpenseController {
                 showError("Выберите категорию расхода");
                 return;
             }
-            createdExpense = new Expense(0, amount, category);
+            createdExpense = new Expense(0, amount, category, LocalDate.now());
             closeDialog();
         } catch (NumberFormatException e) {
             showError("Введите корректную сумму");

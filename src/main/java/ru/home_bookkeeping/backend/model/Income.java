@@ -1,12 +1,13 @@
 package ru.home_bookkeeping.backend.model;
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.time.LocalDate;
 
 public class Income {
         private int number;      // Номер по порядку
         private double amount;   // Сумма дохода
         private String source;   // Источник дохода
-        private LocalDate date;
+        private LocalDate date;    // Дата получения дохода
 
         // Статичный набор доступных источников дохода на выбор
         private static final HashSet<String> sources = new HashSet<>() {{
@@ -25,6 +26,7 @@ public class Income {
          * @param number Порядковый номер записи
          * @param amount Сумма дохода
          * @param source Источник дохода
+         * @param date Дата получения дохода
          */
         public Income(int number, double amount, String source, LocalDate date) {
             this.number = number;
@@ -48,6 +50,7 @@ public class Income {
         public String getSource() {
             return source;
         }
+        public LocalDate getDate() { return date; }
 
         public LocalDate getDate() { return date; }
 
