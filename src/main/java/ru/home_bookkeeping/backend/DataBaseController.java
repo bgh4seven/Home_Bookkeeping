@@ -98,7 +98,8 @@ public class DataBaseController {
     }
 
     public void addIncome(int number, double amount, String source, LocalDate date) {
-        Income income = new Income(number, amount, source,date);
+
+        Income income = new Income(number, amount, source, date);
         incomes.put(number, income);
     }
 

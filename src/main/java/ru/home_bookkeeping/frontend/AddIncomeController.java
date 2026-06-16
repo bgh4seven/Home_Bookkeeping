@@ -11,6 +11,7 @@ public class AddIncomeController {
 
     @FXML private TextField amountField;
     @FXML private ComboBox<String> sourceComboBox;
+    @FXML private DatePicker datePicker;
     @FXML private Button cancelButton;
     @FXML private Button okButton;
 
@@ -20,8 +21,10 @@ public class AddIncomeController {
     public void initialize() {
         HashSet<String> sources = Income.getSources();
         sourceComboBox.getItems().addAll(sources);
-        if (!sourceComboBox.getItems().isEmpty())
+        if (!sourceComboBox.getItems().isEmpty()) {
             sourceComboBox.getSelectionModel().selectFirst();
+        }
+        datePicker.setValue(LocalDate.now());   // сегодня по умолчанию
     }
 
     @FXML
@@ -29,12 +32,12 @@ public class AddIncomeController {
         try {
             double amount = Double.parseDouble(amountField.getText());
             String source = sourceComboBox.getValue();
-
+            LocalDate date = datePicker.getValue();
             if (source == null || source.isEmpty()) {
-                showError("Выберите источник дохода");
+                showError("Выберите источник и дату");
                 return;
             }
-            createdIncome = new Income(0, amount, source, LocalDate.now());
+            createdIncome = new Income(0, amount, source, date);
             closeDialog();
         } catch (NumberFormatException e) {
             showError("Введите корректную сумму");

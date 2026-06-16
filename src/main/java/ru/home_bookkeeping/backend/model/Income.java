@@ -1,4 +1,5 @@
 package ru.home_bookkeeping.backend.model;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.time.LocalDate;
 
@@ -51,6 +52,8 @@ public class Income {
         }
         public LocalDate getDate() { return date; }
 
+        public LocalDate getDate() { return date; }
+
         /**
          * Статический геттер — возвращает доступные источники дохода
          */
@@ -70,4 +73,6 @@ public class Income {
     public void setSource(String source) {
         this.source = source;
     }
+
+    public void setDate(LocalDate date) { this.date = date; }
     }
