@@ -1,10 +1,12 @@
 package ru.home_bookkeeping.backend.model;
+import java.time.LocalDate;
 import java.util.HashSet;
 
 public class Income {
         private int number;      // Номер по порядку
         private double amount;   // Сумма дохода
         private String source;   // Источник дохода
+        private LocalDate date;
 
         // Статичный набор доступных источников дохода на выбор
         private static final HashSet<String> sources = new HashSet<>() {{
@@ -24,10 +26,11 @@ public class Income {
          * @param amount Сумма дохода
          * @param source Источник дохода
          */
-        public Income(int number, double amount, String source) {
+        public Income(int number, double amount, String source, LocalDate date) {
             this.number = number;
             this.amount = amount;
             this.source = source;
+            this.date = date;
         }
     //Нужен пустой конструктор для Gson
     public Income() {}
@@ -45,6 +48,8 @@ public class Income {
         public String getSource() {
             return source;
         }
+
+        public LocalDate getDate() { return date; }
 
         /**
          * Статический геттер — возвращает доступные источники дохода
@@ -65,4 +70,6 @@ public class Income {
     public void setSource(String source) {
         this.source = source;
     }
+
+    public void setDate(LocalDate date) { this.date = date; }
     }

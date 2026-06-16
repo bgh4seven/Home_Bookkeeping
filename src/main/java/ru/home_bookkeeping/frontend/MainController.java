@@ -3,6 +3,8 @@ package ru.home_bookkeeping.frontend;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.chart.BarChart;
+import javafx.scene.chart.XYChart;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.stage.Stage;
 import ru.home_bookkeeping.backend.DataBaseController;
@@ -16,8 +18,10 @@ import ru.home_bookkeeping.backend.model.Income;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
-import javafx.util.StringConverter;
+import java.util.Map;
+
 import javafx.util.converter.DoubleStringConverter;
 import javafx.util.converter.IntegerStringConverter;
 
@@ -61,6 +65,9 @@ public class MainController {
     @FXML private TableColumn<Income, String>  inc_sourceColumn;   // источник дохода
     @FXML private Button addIncomeButton;
     @FXML private Button deleteIncomeButton;
+    @FXML private ComboBox<Integer> yearComboBox;
+    @FXML private ComboBox<String> monthComboBox;
+    @FXML private BarChart<Number, String> incomeChart;
 
     @FXML private TableView<Expense> expenseTable;
     @FXML private TableColumn<Expense, Integer> exp_numberColumn;
@@ -128,7 +135,7 @@ public class MainController {
     }
     private void showAddDepositDialog()  {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/add-deposit-view.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/add-deposit-dialog.fxml"));
             Parent root = loader.load();
 
             // Получаем контроллер диалога
@@ -199,7 +206,7 @@ public class MainController {
     }
     private void showAddCreditDialog() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/add-credit-view.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/add-credit-dialog.fxml"));
             Parent root = loader.load();
             AddCreditController controller = loader.getController();
 
@@ -238,11 +245,77 @@ public class MainController {
             //refreshIncomeTable();
         });
 
+        // Настройка выбора года и месяца
+        yearComboBox.getItems().addAll(2023, 2024, 2025, 2026); // можно динамически вычислять
+        yearComboBox.setValue(LocalDate.now().getYear());
+        monthComboBox.getItems().addAll("Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+                "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь");
+        monthComboBox.setValue(monthName(LocalDate.now().getMonthValue()));
+
+        // Слушатели
+        yearComboBox.setOnAction(e -> updateIncomeChart());
+        monthComboBox.setOnAction(e -> updateIncomeChart());
+
+        // Первоначальная отрисовка
+        updateIncomeChart();
+
         refreshIncomeTable();
+    }
+    private String monthName(int month) {
+        String[] names = {"Январь","Февраль","Март","Апрель","Май","Июнь",
+                "Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"};
+        return names[month-1];
     }
     private void refreshIncomeTable() {
         incomeTable.getItems().clear();
         incomeTable.getItems().addAll(db.getAllIncomes());
+        updateIncomeChart();
+    }
+    private void updateIncomeChart() {
+        int year = yearComboBox.getValue();
+        String monthName = monthComboBox.getValue();
+        int month = monthNameToNumber(monthName);
+
+        List<Income> all = db.getAllIncomes();
+        Map<String, Double> sourceSum = new HashMap<>();
+
+        for (Income inc : all) {
+            LocalDate d = inc.getDate();
+            if (d != null && d.getYear() == year && d.getMonthValue() == month) {
+                String src = inc.getSource();
+                sourceSum.put(src, sourceSum.getOrDefault(src, 0.0) + inc.getAmount());
+            }
+        }
+
+        // Очищаем старые данные
+        incomeChart.getData().clear();
+
+        // Для каждой категории создаём отдельную серию
+        for (Map.Entry<String, Double> entry : sourceSum.entrySet()) {
+            String category = entry.getKey();
+            double sum = entry.getValue();
+            XYChart.Series<Number, String> series = new XYChart.Series<>();
+            series.setName(category);
+            // ПРАВИЛЬНЫЙ порядок: число (X) идёт первым, категория (Y) – вторым
+            series.getData().add(new XYChart.Data<>(sum, category));
+            incomeChart.getData().add(series);
+        }
+
+        // Если данных нет – показываем заглушку
+        if (sourceSum.isEmpty()) {
+            XYChart.Series<Number, String> empty = new XYChart.Series<>();
+            empty.setName("Нет данных");
+            empty.getData().add(new XYChart.Data<>(0, "Нет данных"));
+            incomeChart.getData().add(empty);
+        }
+    }
+    private int monthNameToNumber(String name) {
+        String[] names = {"Январь","Февраль","Март","Апрель","Май","Июнь",
+                "Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"};
+        for (int i = 0; i < names.length; i++) {
+            if (names[i].equals(name)) return i+1;
+        }
+        return 1;
     }
     private void deleteSelectedIncome() {
         Income selected = incomeTable.getSelectionModel().getSelectedItem();
@@ -256,10 +329,9 @@ public class MainController {
     }
     private void showAddIncomeDialog() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/add-income-view.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/add-income-dialog.fxml"));
             Parent root = loader.load();
             AddIncomeController controller = loader.getController();
-
             Stage stage = new Stage();
             stage.setTitle("Новый доход");
             stage.setScene(new Scene(root));
@@ -269,7 +341,7 @@ public class MainController {
             Income newIncome = controller.getCreatedIncome();
             if (newIncome != null) {
                 int newNumber = db.getNextIncomeNumber();
-                db.addIncome(newNumber, newIncome.getAmount(), newIncome.getSource());
+                db.addIncome(newNumber, newIncome.getAmount(), newIncome.getSource(), newIncome.getDate());
                 db.writeDB();
                 refreshIncomeTable();
             }
@@ -311,7 +383,7 @@ public class MainController {
     }
     private void showAddExpenseDialog() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/add-expense-view.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/add-expense-dialog.fxml"));
             Parent root = loader.load();
             AddExpenseController controller = loader.getController();
 
