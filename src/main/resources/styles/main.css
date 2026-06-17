@@ -1,6 +1,12 @@
 .root {
     -fx-font-family: "Segoe UI", sans-serif;
-    -fx-background-color: #7ff2fa;
+    /*-fx-background-color: #7ff2fa; */
+    -fx-background-color: linear-gradient(to bottom right, #f0f4ff, #d9e2f0);
+    /* Взаимоисключающее с тем фоном, что выше. Это фон текстуры
+    -fx-background-color: #f5f5f5;
+        -fx-background-image: url("background.png");
+        -fx-background-repeat: repeat;
+        -fx-background-size: 250px 250px;*/
 }
 
 /* Нижняя панель с кнопкой редактирования */

@@ -1,5 +1,7 @@
 package ru.home_bookkeeping.backend.model;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 
 public class Deposit {
@@ -37,8 +39,10 @@ public class Deposit {
         this.closeDate = openDate.plusMonths(months);
 
         // Расчёт ожидаемого дохода по формуле простых процентов:
-        // income = amount * (percent / 100) * (months / 12)
-        this.income = amount * (percent / 100.0) * (months / 12.0);
+        double rawIncome = amount * (percent / 100.0) * (months / 12.0);
+        this.income = BigDecimal.valueOf(rawIncome)
+                .setScale(2, RoundingMode.HALF_UP) // Округление до 2 значащих цифр после запятой
+                .doubleValue();
     }
     public Deposit() {
         // пустой конструктор нужен для Gson
@@ -97,6 +101,10 @@ public class Deposit {
 
     public void setAmount(double amount) {
         this.amount = amount;
+        double rawIncome = this.amount * (this.percent / 100.0) * (this.months / 12.0);
+        this.income = BigDecimal.valueOf(rawIncome)
+                .setScale(2, RoundingMode.HALF_UP)
+                .doubleValue();
     }
 
     public void setPercent(double percent) {

@@ -69,4 +69,6 @@ public class Expense {
     public void setCategory(String category) {
         this.category = category;
     }
+
+    public void setDate(LocalDate date) { this.date = date; }
 }

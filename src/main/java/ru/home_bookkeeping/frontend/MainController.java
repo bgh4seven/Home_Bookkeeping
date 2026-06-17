@@ -4,6 +4,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.chart.BarChart;
+import javafx.scene.chart.PieChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.stage.Stage;
@@ -43,6 +44,9 @@ public class MainController {
     @FXML private TableColumn<Deposit, LocalDate> dep_startDateColumn;  // Дата открытия
     @FXML private TableColumn<Deposit, LocalDate> dep_endDateColumn;    // Дата погашения
     @FXML private TableColumn<Deposit, Double> dep_expectedIncomeColumn; // Ожидаемая доходность
+    @FXML private Label depositTotalLabel;
+    @FXML private PieChart depositBankChart;
+    @FXML private PieChart depositIncomeChart;
     @FXML private Button addDepositButton;    // Кнопка "Добавить вклад"
     @FXML private Button deleteDepositButton; // Кнопка "Удалить вклад"
 
@@ -56,8 +60,13 @@ public class MainController {
     @FXML private TableColumn<Credit, LocalDate> cre_openDateColumn;
     @FXML private TableColumn<Credit, LocalDate> cre_closeDateColumn;
     @FXML private TableColumn<Credit, Double>  cre_overpaymentColumn;
+    @FXML private TableColumn<Credit, Double> cre_remainingAmountColumn;
+    @FXML private Label creditTotalLabel;
+    @FXML private PieChart creditBankChart;
+    @FXML private PieChart creditOverpaymentChart;
     @FXML private Button addCreditButton;
     @FXML private Button deleteCreditButton;
+    @FXML private Button payCreditButton;
 
     @FXML private TableView<Income> incomeTable;
     @FXML private TableColumn<Income, Integer> inc_numberColumn;
@@ -65,8 +74,9 @@ public class MainController {
     @FXML private TableColumn<Income, String>  inc_sourceColumn;   // источник дохода
     @FXML private Button addIncomeButton;
     @FXML private Button deleteIncomeButton;
-    @FXML private ComboBox<Integer> yearComboBox;
-    @FXML private ComboBox<String> monthComboBox;
+    @FXML private ComboBox<Integer> inc_yearComboBox;
+    @FXML private ComboBox<String> inc_monthComboBox;
+    @FXML private Label inc_TotalLabel;
     @FXML private BarChart<Number, String> incomeChart;
 
     @FXML private TableView<Expense> expenseTable;
@@ -75,6 +85,10 @@ public class MainController {
     @FXML private TableColumn<Expense, String>  exp_categoryColumn; // категория расхода
     @FXML private Button addExpenseButton;
     @FXML private Button deleteExpenseButton;
+    @FXML private ComboBox<Integer> exp_YearComboBox;
+    @FXML private ComboBox<String> exp_MonthComboBox;
+    @FXML private Label exp_TotalLabel;
+    @FXML private BarChart<Number, String> expenseChart;
     //endregion
 
     /**
@@ -103,7 +117,7 @@ public class MainController {
         dep_bankColumn.setCellValueFactory(new PropertyValueFactory<>("bankName"));
         dep_amountColumn.setCellValueFactory(new PropertyValueFactory<>("amount"));
         dep_percentColumn.setCellValueFactory(new PropertyValueFactory<>("percent"));
-        dep_srokColumn.setCellValueFactory(new PropertyValueFactory<>("days"));
+        dep_srokColumn.setCellValueFactory(new PropertyValueFactory<>("months"));
         dep_startDateColumn.setCellValueFactory(new PropertyValueFactory<>("openDate"));
         dep_endDateColumn.setCellValueFactory(new PropertyValueFactory<>("closeDate"));
         dep_expectedIncomeColumn.setCellValueFactory(new PropertyValueFactory<>("income"));
@@ -122,6 +136,9 @@ public class MainController {
     private void refreshDepositTable() {
         depositTable.getItems().clear();
         depositTable.getItems().addAll(db.getAllDeposits());
+        double total = db.getTotalDeposits();
+        depositTotalLabel.setText(String.format("Общая сумма вкладов: %.2f руб", total));
+        updateDepositCharts();
     }
     private void deleteSelectedDeposit() {
         Deposit selected = depositTable.getSelectionModel().getSelectedItem();
@@ -167,6 +184,34 @@ public class MainController {
             alert.showAndWait();
         }
     }
+    private void updateDepositCharts() {
+        List<Deposit> deposits = db.getAllDeposits();
+
+        // 1. Диаграмма по банкам
+        Map<String, Double> bankSum = new HashMap<>();
+        for (Deposit d : deposits) {
+            bankSum.put(d.getBankName(), bankSum.getOrDefault(d.getBankName(), 0.0) + d.getAmount());
+        }
+        depositBankChart.getData().clear();
+        if (bankSum.isEmpty()) {
+            depositBankChart.getData().add(new PieChart.Data("Нет данных", 1));
+        } else {
+            for (Map.Entry<String, Double> entry : bankSum.entrySet()) {
+                depositBankChart.getData().add(new PieChart.Data(entry.getKey() + " (" + String.format("%.0f", entry.getValue()) + " руб)", entry.getValue()));
+            }
+        }
+
+        // 2. Диаграмма доходности по вкладам
+        depositIncomeChart.getData().clear();
+        if (deposits.isEmpty()) {
+            depositIncomeChart.getData().add(new PieChart.Data("Нет данных", 1));
+        } else {
+            for (Deposit d : deposits) {
+                String label = "Вклад #" + d.getNumber() + " (" + String.format("%.0f", d.getIncome()) + " руб)";
+                depositIncomeChart.getData().add(new PieChart.Data(label, d.getIncome()));
+            }
+        }
+    }
 
     private void initializeCredit() {
         cre_numberColumn.setCellValueFactory(new PropertyValueFactory<>("number"));
@@ -178,6 +223,7 @@ public class MainController {
         cre_openDateColumn.setCellValueFactory(new PropertyValueFactory<>("openDate"));
         cre_closeDateColumn.setCellValueFactory(new PropertyValueFactory<>("closeDate"));
         cre_overpaymentColumn.setCellValueFactory(new PropertyValueFactory<>("overpayment"));
+        cre_remainingAmountColumn.setCellValueFactory(new PropertyValueFactory<>("remainingAmount"));
 
         addCreditButton.setOnAction(event -> {
             showAddCreditDialog();
@@ -187,12 +233,16 @@ public class MainController {
             deleteSelectedCredit();
             //refreshCreditTable();
         });
+        payCreditButton.setOnAction(event -> makeCreditPayment());
 
         refreshCreditTable();
     }
     private void refreshCreditTable() {
         creditTable.getItems().clear();
         creditTable.getItems().addAll(db.getAllCredits());
+        double totalDebt = db.getTotalCreditDebt();
+        creditTotalLabel.setText(String.format("Общая задолженность: %.2f руб", totalDebt));
+        updateCreditCharts();
     }
     private void deleteSelectedCredit() {
         Credit selected = creditTable.getSelectionModel().getSelectedItem();
@@ -230,11 +280,50 @@ public class MainController {
             showAlert("Ошибка", "Не удалось открыть окно добавления кредита");
         }
     }
+    private void makeCreditPayment() {
+        Credit selected = creditTable.getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            selected.payMonthly();  // уменьшает remainingAmount
+            db.writeDB();           // сохраняем изменения
+            refreshCreditTable();   // обновляем таблицу и метку
+        } else {
+            showAlert("Оплата кредита", "Выберите кредит для внесения платежа");
+        }
+    }
+    private void updateCreditCharts() {
+        List<Credit> credits = db.getAllCredits();
+
+        // 1. Диаграмма по банкам (остаток)
+        Map<String, Double> bankRemaining = new HashMap<>();
+        for (Credit c : credits) {
+            bankRemaining.put(c.getBankName(), bankRemaining.getOrDefault(c.getBankName(), 0.0) + c.getRemainingAmount());
+        }
+        creditBankChart.getData().clear();
+        if (bankRemaining.isEmpty()) {
+            creditBankChart.getData().add(new PieChart.Data("Нет данных", 1));
+        } else {
+            for (Map.Entry<String, Double> entry : bankRemaining.entrySet()) {
+                creditBankChart.getData().add(new PieChart.Data(entry.getKey() + " (" + String.format("%.0f", entry.getValue()) + " руб)", entry.getValue()));
+            }
+        }
+
+        // 2. Диаграмма переплаты по кредитам
+        creditOverpaymentChart.getData().clear();
+        if (credits.isEmpty()) {
+            creditOverpaymentChart.getData().add(new PieChart.Data("Нет данных", 1));
+        } else {
+            for (Credit c : credits) {
+                String label = "Кредит #" + c.getNumber() + " (" + String.format("%.0f", c.getOverpayment()) + " руб)";
+                creditOverpaymentChart.getData().add(new PieChart.Data(label, c.getOverpayment()));
+            }
+        }
+    }
 
     private void initializeIncome() {
         inc_numberColumn.setCellValueFactory(new PropertyValueFactory<>("number"));
         inc_amountColumn.setCellValueFactory(new PropertyValueFactory<>("amount"));
         inc_sourceColumn.setCellValueFactory(new PropertyValueFactory<>("source"));
+
 
         addIncomeButton.setOnAction(event -> {
             showAddIncomeDialog();
@@ -246,15 +335,15 @@ public class MainController {
         });
 
         // Настройка выбора года и месяца
-        yearComboBox.getItems().addAll(2023, 2024, 2025, 2026); // можно динамически вычислять
-        yearComboBox.setValue(LocalDate.now().getYear());
-        monthComboBox.getItems().addAll("Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+        inc_yearComboBox.getItems().addAll(2023, 2024, 2025, 2026); // можно динамически вычислять
+        inc_yearComboBox.setValue(LocalDate.now().getYear());
+        inc_monthComboBox.getItems().addAll("Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
                 "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь");
-        monthComboBox.setValue(monthName(LocalDate.now().getMonthValue()));
+        inc_monthComboBox.setValue(monthName(LocalDate.now().getMonthValue()));
 
         // Слушатели
-        yearComboBox.setOnAction(e -> updateIncomeChart());
-        monthComboBox.setOnAction(e -> updateIncomeChart());
+        inc_yearComboBox.setOnAction(e -> updateIncomeChart());
+        inc_monthComboBox.setOnAction(e -> updateIncomeChart());
 
         // Первоначальная отрисовка
         updateIncomeChart();
@@ -272,10 +361,15 @@ public class MainController {
         updateIncomeChart();
     }
     private void updateIncomeChart() {
-        int year = yearComboBox.getValue();
-        String monthName = monthComboBox.getValue();
+        int year = inc_yearComboBox.getValue();
+        String monthName = inc_monthComboBox.getValue();
         int month = monthNameToNumber(monthName);
 
+        // 1. Получаем общую сумму из бэкенда
+        double total = db.getIncomeForMonth(month, year);
+        inc_TotalLabel.setText(String.format("Итого: %.2f руб", total));
+
+        // 2. Строим гистограмму
         List<Income> all = db.getAllIncomes();
         Map<String, Double> sourceSum = new HashMap<>();
 
@@ -287,21 +381,17 @@ public class MainController {
             }
         }
 
-        // Очищаем старые данные
         incomeChart.getData().clear();
 
-        // Для каждой категории создаём отдельную серию
         for (Map.Entry<String, Double> entry : sourceSum.entrySet()) {
             String category = entry.getKey();
             double sum = entry.getValue();
             XYChart.Series<Number, String> series = new XYChart.Series<>();
             series.setName(category);
-            // ПРАВИЛЬНЫЙ порядок: число (X) идёт первым, категория (Y) – вторым
             series.getData().add(new XYChart.Data<>(sum, category));
             incomeChart.getData().add(series);
         }
 
-        // Если данных нет – показываем заглушку
         if (sourceSum.isEmpty()) {
             XYChart.Series<Number, String> empty = new XYChart.Series<>();
             empty.setName("Нет данных");
@@ -365,11 +455,61 @@ public class MainController {
             //refreshExpenseTable();
         });
 
+        // Настройка выбора года и месяца
+        exp_YearComboBox.getItems().addAll(2023, 2024, 2025, 2026); // или динамически
+        exp_YearComboBox.setValue(LocalDate.now().getYear());
+        exp_MonthComboBox.getItems().addAll("Январь","Февраль","Март","Апрель","Май","Июнь",
+                "Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь");
+        exp_MonthComboBox.setValue(monthName(LocalDate.now().getMonthValue()));
+
+        exp_YearComboBox.setOnAction(e -> updateExpenseChart());
+        exp_MonthComboBox.setOnAction(e -> updateExpenseChart());
+
         refreshExpenseTable();
     }
     private void refreshExpenseTable() {
         expenseTable.getItems().clear();
         expenseTable.getItems().addAll(db.getAllExpenses());
+        updateExpenseChart();
+    }
+    private void updateExpenseChart() {
+        int year = exp_YearComboBox.getValue();
+        String monthName = exp_MonthComboBox.getValue();
+        int month = monthNameToNumber(monthName);
+
+        // Получаем общую сумму из бэкенда
+        double total = db.getExpenseForMonth(month, year);
+        exp_TotalLabel.setText(String.format("Итого: %.2f руб", total));
+
+        // Строим гистограмму
+        List<Expense> all = db.getAllExpenses();
+        Map<String, Double> categorySum = new HashMap<>();
+
+        for (Expense exp : all) {
+            LocalDate d = exp.getDate();
+            if (d != null && d.getYear() == year && d.getMonthValue() == month) {
+                String cat = exp.getCategory();
+                categorySum.put(cat, categorySum.getOrDefault(cat, 0.0) + exp.getAmount());
+            }
+        }
+
+        expenseChart.getData().clear();
+
+        for (Map.Entry<String, Double> entry : categorySum.entrySet()) {
+            String category = entry.getKey();
+            double sum = entry.getValue();
+            XYChart.Series<Number, String> series = new XYChart.Series<>();
+            series.setName(category);
+            series.getData().add(new XYChart.Data<>(sum, category));
+            expenseChart.getData().add(series);
+        }
+
+        if (categorySum.isEmpty()) {
+            XYChart.Series<Number, String> empty = new XYChart.Series<>();
+            empty.setName("Нет данных");
+            empty.getData().add(new XYChart.Data<>(0, "Нет данных"));
+            expenseChart.getData().add(empty);
+        }
     }
     private void deleteSelectedExpense() {
         Expense selected = expenseTable.getSelectionModel().getSelectedItem();
@@ -386,7 +526,6 @@ public class MainController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/add-expense-dialog.fxml"));
             Parent root = loader.load();
             AddExpenseController controller = loader.getController();
-
             Stage stage = new Stage();
             stage.setTitle("Новый расход");
             stage.setScene(new Scene(root));
@@ -441,33 +580,42 @@ public class MainController {
             refreshDepositTable();
         });
 
-        // Сумма (Double)
+        // Сумма (Double) — после изменения пересчитываем доход
         dep_amountColumn.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
         dep_amountColumn.setOnEditCommit(event -> {
             Deposit d = event.getRowValue();
-            d.setAmount(event.getNewValue());
+            double newAmount = event.getNewValue();
+            d.setAmount(newAmount);
+            // Пересчёт дохода: сумма * (процент / 100) * (срок_в_месяцах / 12)
+            double income = newAmount * (d.getPercent() / 100.0) * (d.getMonths() / 12.0);
+            d.setIncome(income);
             db.writeDB();
             refreshDepositTable();
         });
 
-        // Процент (Double)
+        // Процент (Double) — после изменения пересчитываем доход
         dep_percentColumn.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
         dep_percentColumn.setOnEditCommit(event -> {
             Deposit d = event.getRowValue();
-            d.setPercent(event.getNewValue());
+            double newPercent = event.getNewValue();
+            d.setPercent(newPercent);
+            double income = d.getAmount() * (newPercent / 100.0) * (d.getMonths() / 12.0);
+            d.setIncome(income);
             db.writeDB();
             refreshDepositTable();
         });
 
-        // Срок в днях (Integer)
+        // Срок в месяцах (Integer) — пересчитываем дату закрытия и доход
         dep_srokColumn.setCellFactory(TextFieldTableCell.forTableColumn(new IntegerStringConverter()));
         dep_srokColumn.setOnEditCommit(event -> {
             Deposit d = event.getRowValue();
             int newMonths = event.getNewValue();
             d.setMonths(newMonths);
-            // Пересчёт даты закрытия и дохода
-            d.setCloseDate(d.getOpenDate().plusDays(newMonths));
-            d.setIncome(d.getAmount() * (d.getPercent() / 100.0) * (newMonths / 12.0));
+            // Пересчёт даты закрытия (дата открытия + срок в месяцах)
+            d.setCloseDate(d.getOpenDate().plusMonths(newMonths));
+            // Пересчёт дохода
+            double income = d.getAmount() * (d.getPercent() / 100.0) * (newMonths / 12.0);
+            d.setIncome(income);
             db.writeDB();
             refreshDepositTable();
         });
@@ -483,16 +631,20 @@ public class MainController {
             refreshCreditTable();
         });
 
-        // Сумма кредита (Double)
+        // Сумма кредита (Double) – пересчёт переплаты
         cre_initialAmountColumn.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
         cre_initialAmountColumn.setOnEditCommit(event -> {
             Credit c = event.getRowValue();
-            c.setInitialAmount(event.getNewValue());
+            double newAmount = event.getNewValue();
+            c.setInitialAmount(newAmount);
+            // Пересчёт переплаты
+            double newOverpayment = c.getMonthlyPayment() * c.getMonths() - newAmount;
+            c.setOverpayment(newOverpayment);
             db.writeDB();
             refreshCreditTable();
         });
 
-        // Процент (Double)
+        // Процент (Double) – не влияет на переплату в данной модели, но можно обновить
         cre_percentColumn.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
         cre_percentColumn.setOnEditCommit(event -> {
             Credit c = event.getRowValue();
@@ -501,24 +653,29 @@ public class MainController {
             refreshCreditTable();
         });
 
-        // Ежемесячный платёж (Double)
+        // Ежемесячный платёж (Double) – пересчёт переплаты
         cre_monthlyPaymentColumn.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
         cre_monthlyPaymentColumn.setOnEditCommit(event -> {
             Credit c = event.getRowValue();
-            c.setMonthlyPayment(event.getNewValue());
+            double newPayment = event.getNewValue();
+            c.setMonthlyPayment(newPayment);
+            double newOverpayment = newPayment * c.getMonths() - c.getInitialAmount();
+            c.setOverpayment(newOverpayment);
             db.writeDB();
             refreshCreditTable();
         });
 
-        // Срок в месяцах (Integer)
+        // Срок в месяцах (Integer) – пересчёт переплаты и даты закрытия
         cre_monthsColumn.setCellFactory(TextFieldTableCell.forTableColumn(new IntegerStringConverter()));
         cre_monthsColumn.setOnEditCommit(event -> {
             Credit c = event.getRowValue();
             int newMonths = event.getNewValue();
             c.setMonths(newMonths);
-            // Пересчёт даты закрытия и переплаты
+            // Пересчёт даты закрытия
             c.setCloseDate(c.getOpenDate().plusMonths(newMonths));
-            c.setOverpayment(c.getMonthlyPayment() * newMonths - c.getInitialAmount());
+            // Пересчёт переплаты
+            double newOverpayment = c.getMonthlyPayment() * newMonths - c.getInitialAmount();
+            c.setOverpayment(newOverpayment);
             db.writeDB();
             refreshCreditTable();
         });
