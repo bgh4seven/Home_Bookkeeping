@@ -16,7 +16,7 @@ import java.util.Map;
 public class DataBaseController {
 
     //Путь к файлам баз данных
-    private Path dbPath = Paths.get("src/main/resources/db.json");
+    private Path dbPath = Paths.get("db.json");
     //Сюда подгружается дб во время работы программы
     private Database db = readDB(dbPath);
     private Map<Integer, Deposit> deposits = db.getDeposits();
