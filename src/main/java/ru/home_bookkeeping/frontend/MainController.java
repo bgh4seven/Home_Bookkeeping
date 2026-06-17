@@ -580,33 +580,42 @@ public class MainController {
             refreshDepositTable();
         });
 
-        // Сумма (Double)
+        // Сумма (Double) — после изменения пересчитываем доход
         dep_amountColumn.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
         dep_amountColumn.setOnEditCommit(event -> {
             Deposit d = event.getRowValue();
-            d.setAmount(event.getNewValue());
+            double newAmount = event.getNewValue();
+            d.setAmount(newAmount);
+            // Пересчёт дохода: сумма * (процент / 100) * (срок_в_месяцах / 12)
+            double income = newAmount * (d.getPercent() / 100.0) * (d.getMonths() / 12.0);
+            d.setIncome(income);
             db.writeDB();
             refreshDepositTable();
         });
 
-        // Процент (Double)
+        // Процент (Double) — после изменения пересчитываем доход
         dep_percentColumn.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
         dep_percentColumn.setOnEditCommit(event -> {
             Deposit d = event.getRowValue();
-            d.setPercent(event.getNewValue());
+            double newPercent = event.getNewValue();
+            d.setPercent(newPercent);
+            double income = d.getAmount() * (newPercent / 100.0) * (d.getMonths() / 12.0);
+            d.setIncome(income);
             db.writeDB();
             refreshDepositTable();
         });
 
-        // Срок в днях (Integer)
+        // Срок в месяцах (Integer) — пересчитываем дату закрытия и доход
         dep_srokColumn.setCellFactory(TextFieldTableCell.forTableColumn(new IntegerStringConverter()));
         dep_srokColumn.setOnEditCommit(event -> {
             Deposit d = event.getRowValue();
             int newMonths = event.getNewValue();
             d.setMonths(newMonths);
-            // Пересчёт даты закрытия и дохода
-            d.setCloseDate(d.getOpenDate().plusDays(newMonths));
-            d.setIncome(d.getAmount() * (d.getPercent() / 100.0) * (newMonths / 12.0));
+            // Пересчёт даты закрытия (дата открытия + срок в месяцах)
+            d.setCloseDate(d.getOpenDate().plusMonths(newMonths));
+            // Пересчёт дохода
+            double income = d.getAmount() * (d.getPercent() / 100.0) * (newMonths / 12.0);
+            d.setIncome(income);
             db.writeDB();
             refreshDepositTable();
         });
@@ -622,16 +631,20 @@ public class MainController {
             refreshCreditTable();
         });
 
-        // Сумма кредита (Double)
+        // Сумма кредита (Double) – пересчёт переплаты
         cre_initialAmountColumn.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
         cre_initialAmountColumn.setOnEditCommit(event -> {
             Credit c = event.getRowValue();
-            c.setInitialAmount(event.getNewValue());
+            double newAmount = event.getNewValue();
+            c.setInitialAmount(newAmount);
+            // Пересчёт переплаты
+            double newOverpayment = c.getMonthlyPayment() * c.getMonths() - newAmount;
+            c.setOverpayment(newOverpayment);
             db.writeDB();
             refreshCreditTable();
         });
 
-        // Процент (Double)
+        // Процент (Double) – не влияет на переплату в данной модели, но можно обновить
         cre_percentColumn.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
         cre_percentColumn.setOnEditCommit(event -> {
             Credit c = event.getRowValue();
@@ -640,24 +653,29 @@ public class MainController {
             refreshCreditTable();
         });
 
-        // Ежемесячный платёж (Double)
+        // Ежемесячный платёж (Double) – пересчёт переплаты
         cre_monthlyPaymentColumn.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
         cre_monthlyPaymentColumn.setOnEditCommit(event -> {
             Credit c = event.getRowValue();
-            c.setMonthlyPayment(event.getNewValue());
+            double newPayment = event.getNewValue();
+            c.setMonthlyPayment(newPayment);
+            double newOverpayment = newPayment * c.getMonths() - c.getInitialAmount();
+            c.setOverpayment(newOverpayment);
             db.writeDB();
             refreshCreditTable();
         });
 
-        // Срок в месяцах (Integer)
+        // Срок в месяцах (Integer) – пересчёт переплаты и даты закрытия
         cre_monthsColumn.setCellFactory(TextFieldTableCell.forTableColumn(new IntegerStringConverter()));
         cre_monthsColumn.setOnEditCommit(event -> {
             Credit c = event.getRowValue();
             int newMonths = event.getNewValue();
             c.setMonths(newMonths);
-            // Пересчёт даты закрытия и переплаты
+            // Пересчёт даты закрытия
             c.setCloseDate(c.getOpenDate().plusMonths(newMonths));
-            c.setOverpayment(c.getMonthlyPayment() * newMonths - c.getInitialAmount());
+            // Пересчёт переплаты
+            double newOverpayment = c.getMonthlyPayment() * newMonths - c.getInitialAmount();
+            c.setOverpayment(newOverpayment);
             db.writeDB();
             refreshCreditTable();
         });
