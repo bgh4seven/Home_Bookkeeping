@@ -17,6 +17,17 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import ru.home_bookkeeping.backend.model.Expense;
 import ru.home_bookkeeping.backend.model.Income;
 
+import com.google.gson.JsonObject;
+import javafx.concurrent.Task;
+import javafx.util.StringConverter;
+import ru.home_bookkeeping.backend.FinancialAnalyzer;
+import ru.home_bookkeeping.backend.YandexGptClient;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.Locale;
+import java.util.TreeSet;
+
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -89,6 +100,27 @@ public class MainController {
     @FXML private ComboBox<String> exp_MonthComboBox;
     @FXML private Label exp_TotalLabel;
     @FXML private BarChart<Number, String> expenseChart;
+
+    // Вкладка "ИИ-анализ".
+    @FXML private Tab aiAnalysisTab;
+    @FXML private ComboBox<YearMonth> aiMonthComboBox;
+    @FXML private Button aiAnalyzeButton;
+    @FXML private ProgressIndicator aiProgressIndicator;
+    @FXML private Label aiStatusLabel;
+    @FXML private Label aiIncomeLabel;
+    @FXML private Label aiExpenseLabel;
+    @FXML private Label aiBalanceLabel;
+    @FXML private Label aiCreditLabel;
+    @FXML private Label aiDepositLabel;
+    @FXML private Label aiSummaryLabel;
+    @FXML private Label aiAdvice1Label;
+    @FXML private Label aiAdvice2Label;
+    @FXML private Label aiAdvice3Label;
+    private boolean aiAnalysisLoading = false;
+    // Отчёт для выбранного месяца; подготавливается без сетевого запроса.
+    private JsonObject aiPreparedReport;
+    private boolean aiMonthsRefreshing = false;
+
     //endregion
 
     /**
@@ -104,7 +136,7 @@ public class MainController {
         initializeIncome();
         initializeExpense();
         setupEditModeForAllTables();
-
+        initializeAiAnalysis();
 
         editModeToggleButton.setOnAction(event -> {
             boolean current = depositTable.isEditable(); // можно по любой таблице
@@ -555,6 +587,188 @@ public class MainController {
     }
 
 
+
+
+    //region AI budget analysis
+    private void initializeAiAnalysis() {
+        DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern(
+                "LLLL yyyy", Locale.forLanguageTag("ru-RU"));
+        aiMonthComboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(YearMonth month) {
+                return month == null ? "" : month.format(monthFormatter);
+            }
+            @Override
+            public YearMonth fromString(String value) {
+                // ComboBox не редактируется: преобразование строки не используется.
+                return null;
+            }
+        });
+
+        // Обновляем локальные показатели при выборе периода, без запроса к ИИ.
+        aiMonthComboBox.valueProperty().addListener((observable, oldMonth, newMonth) -> {
+            if (!aiMonthsRefreshing) {
+                updateAiStatistics();
+            }
+        });
+        refreshAiMonths();
+        aiAnalysisTab.setOnSelectionChanged(event -> {
+            if (aiAnalysisTab.isSelected()) {
+                refreshAiMonths();
+            }
+        });
+        aiAnalyzeButton.setOnAction(event -> requestAiAnalysis());
+    }
+
+    private void refreshAiMonths() {
+        YearMonth oldSelection = aiMonthComboBox.getValue();
+        TreeSet<YearMonth> available = new TreeSet<>(Comparator.reverseOrder());
+
+        for (Income item : db.getAllIncomes()) {
+            if (item.getDate() != null) {
+                available.add(YearMonth.from(item.getDate()));
+            }
+        }
+        for (Expense item : db.getAllExpenses()) {
+            if (item.getDate() != null) {
+                available.add(YearMonth.from(item.getDate()));
+            }
+        }
+
+        // setAll() временно сбрасывает выбор. Не считаем статистику в этот момент.
+        aiMonthsRefreshing = true;
+        try {
+            aiMonthComboBox.getItems().setAll(available);
+            if (oldSelection != null && available.contains(oldSelection)) {
+                aiMonthComboBox.setValue(oldSelection);
+            } else if (!available.isEmpty()) {
+                aiMonthComboBox.getSelectionModel().selectFirst();
+            }
+        } finally {
+            aiMonthsRefreshing = false;
+        }
+        updateAiStatistics();
+    }
+
+    /** Локальные вычисления при смене месяца и при возвращении на вкладку. */
+    private void updateAiStatistics() {
+        YearMonth selectedMonth = aiMonthComboBox.getValue();
+        if (selectedMonth == null) {
+            aiPreparedReport = null;
+            aiIncomeLabel.setText("Доходы: —");
+            aiExpenseLabel.setText("Расходы: —");
+            aiBalanceLabel.setText("Разница доходов и расходов: —");
+            aiCreditLabel.setText("Платежи по кредитам/мес (план): —");
+            aiDepositLabel.setText("Действующие вклады: —");
+            clearAiRecommendations();
+            aiAnalyzeButton.setDisable(true);
+            aiStatusLabel.setText("Для анализа сначала добавьте доходы или расходы.");
+            return;
+        }
+
+        try {
+            JsonObject report = new FinancialAnalyzer(db).buildReport(selectedMonth);
+            // Не показываем советы от старой статистики, если данные/месяц изменились.
+            if (aiPreparedReport == null || !aiPreparedReport.equals(report)) {
+                clearAiRecommendations();
+                aiStatusLabel.setText("Показатели обновлены. Нажмите «Получить рекомендации» для ИИ-анализа.");
+            }
+            aiPreparedReport = report;
+            showAiStatistics(report);
+            aiAnalyzeButton.setDisable(aiAnalysisLoading);
+        } catch (RuntimeException ex) {
+            aiPreparedReport = null;
+            aiAnalyzeButton.setDisable(true);
+            aiStatusLabel.setText("Не удалось рассчитать статистику: " + ex.getMessage());
+        }
+    }
+
+    private void clearAiRecommendations() {
+        aiSummaryLabel.setText("Результат появится после анализа.");
+        aiAdvice1Label.setText("");
+        aiAdvice2Label.setText("");
+        aiAdvice3Label.setText("");
+    }
+
+    private void requestAiAnalysis() {
+        if (aiAnalysisLoading) return;
+        // Отправляем уже рассчитанные данные, не привязывая показатели к API.
+        if (aiPreparedReport == null) {
+            aiStatusLabel.setText("Сначала выберите месяц с финансовыми операциями.");
+            return;
+        }
+        final JsonObject report = aiPreparedReport.deepCopy();
+
+        aiSummaryLabel.setText("Ожидаем ответ нейросети...");
+        aiAdvice1Label.setText("");
+        aiAdvice2Label.setText("");
+        aiAdvice3Label.setText("");
+        setAiLoading(true);
+        aiStatusLabel.setText("YandexGPT анализирует бюджет. Ответ может занять до 3 минут...");
+
+        Task<YandexGptClient.AiAnalysisResult> task = new Task<>() {
+            @Override
+            protected YandexGptClient.AiAnalysisResult call() throws Exception {
+                // Инициализация клиента и HTTPS-запрос вне JavaFX Application Thread.
+                return new YandexGptClient().analyze(report);
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            setAiLoading(false);
+            var result = task.getValue();
+            aiSummaryLabel.setText(result.summary());
+            aiAdvice1Label.setText("1. " + formatAiAdvice(result.advice().get(0)));
+            aiAdvice2Label.setText("2. " + formatAiAdvice(result.advice().get(1)));
+            aiAdvice3Label.setText("3. " + formatAiAdvice(result.advice().get(2)));
+            aiStatusLabel.setText("Анализ готов. Использовано токенов: "
+                    + result.totalTokens());
+        });
+
+        task.setOnFailed(event -> {
+            setAiLoading(false);
+            aiSummaryLabel.setText("Не удалось получить рекомендации.");
+            Throwable error = task.getException();
+            aiStatusLabel.setText("Ошибка: "
+                    + (error == null ? "Неизвестная ошибка" : error.getMessage()));
+        });
+
+        Thread worker = new Thread(task, "yandex-gpt-analysis");
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    private void showAiStatistics(JsonObject report) {
+        JsonObject selected = report.getAsJsonArray("months")
+                .get(2).getAsJsonObject();
+        aiIncomeLabel.setText("Доходы: " + formatRub(selected.get("income").getAsDouble()));
+        aiExpenseLabel.setText("Расходы: " + formatRub(selected.get("expenses").getAsDouble()));
+        aiBalanceLabel.setText("Разница доходов и расходов: "
+                + formatRub(selected.get("recordedBalance").getAsDouble()));
+        aiCreditLabel.setText("Платежи по кредитам/мес (план): "
+                + formatRub(report.get("scheduledMonthlyCreditPayments").getAsDouble()));
+        aiDepositLabel.setText("Действующие вклады: "
+                + formatRub(report.get("activeDepositPrincipal").getAsDouble()));
+    }
+
+    private void setAiLoading(boolean loading) {
+        aiAnalysisLoading = loading;
+        aiAnalyzeButton.setDisable(loading || aiPreparedReport == null);
+        aiMonthComboBox.setDisable(loading);
+        aiProgressIndicator.setVisible(loading);
+        aiProgressIndicator.setManaged(loading);
+    }
+
+    private static String formatRub(double value) {
+        return String.format(Locale.forLanguageTag("ru-RU"), "%,.2f ₽", value);
+    }
+
+    private static String formatAiAdvice(String advice) {
+        // Небольшая защита от Markdown/нумерации в ответе модели.
+        return advice.replace("**", "").trim()
+                .replaceFirst("(?iu)^совет\\s*№?\\s*\\d+\\s*[:.\\-–]?\\s*", "");
+    }
+    //endregion
 
     //region EditMode
     private void setupEditModeForAllTables() {
