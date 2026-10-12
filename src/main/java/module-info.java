@@ -3,6 +3,7 @@ module home_bookkeeping {
     requires javafx.fxml;
     requires com.google.gson;
     requires java.xml;
+    requires java.net.http;
 
     opens ru.home_bookkeeping;
     opens ru.home_bookkeeping.backend.model;
