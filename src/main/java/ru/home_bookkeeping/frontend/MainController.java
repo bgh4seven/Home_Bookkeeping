@@ -4,9 +4,12 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.chart.BarChart;
+import javafx.scene.chart.LineChart;
 import javafx.scene.chart.PieChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import ru.home_bookkeeping.backend.DataBaseController;
 import ru.home_bookkeeping.backend.model.Credit;
@@ -22,6 +25,7 @@ import javafx.concurrent.Task;
 import javafx.util.StringConverter;
 import ru.home_bookkeeping.backend.FinancialAnalyzer;
 import ru.home_bookkeeping.backend.YandexGptClient;
+import ru.home_bookkeeping.backend.SmartEntryClient;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
@@ -101,6 +105,13 @@ public class MainController {
     @FXML private Label exp_TotalLabel;
     @FXML private BarChart<Number, String> expenseChart;
 
+    // Вкладка годовой динамики.
+    @FXML private Tab dynamicsTab;
+    @FXML private ComboBox<Integer> dynamicsYearComboBox;
+    @FXML private ComboBox<String> dynamicsModeComboBox;
+    @FXML private LineChart<String, Number> dynamicsChart;
+    @FXML private Label dynamicsInfoLabel;
+
     // Вкладка "ИИ-анализ".
     @FXML private Tab aiAnalysisTab;
     @FXML private ComboBox<YearMonth> aiMonthComboBox;
@@ -116,6 +127,17 @@ public class MainController {
     @FXML private Label aiAdvice1Label;
     @FXML private Label aiAdvice2Label;
     @FXML private Label aiAdvice3Label;
+    // Умный ввод одной финансовой операции.
+    @FXML private TextArea smartInputText;
+    @FXML private Button smartRecognizeButton;
+    @FXML private ProgressIndicator smartProgress;
+    @FXML private Label smartStatusLabel;
+    @FXML private VBox smartPreviewBox;
+    @FXML private VBox smartOperationsBox;
+    @FXML private Button smartSaveButton;
+    private boolean smartBusy;
+    private final List<SmartOperationRow> smartRows = new java.util.ArrayList<>();
+
     private boolean aiAnalysisLoading = false;
     // Отчёт для выбранного месяца; подготавливается без сетевого запроса.
     private JsonObject aiPreparedReport;
@@ -137,6 +159,8 @@ public class MainController {
         initializeExpense();
         setupEditModeForAllTables();
         initializeAiAnalysis();
+        initializeDynamics();
+        initializeSmartEntry();
 
         editModeToggleButton.setOnAction(event -> {
             boolean current = depositTable.isEditable(); // можно по любой таблице
@@ -588,6 +612,222 @@ public class MainController {
 
 
 
+
+    //region Financial dynamics
+    private void initializeDynamics() {
+        dynamicsModeComboBox.getItems().setAll("Оба", "Доходы", "Расходы");
+        dynamicsModeComboBox.setValue("Оба");
+        dynamicsModeComboBox.valueProperty().addListener((obs, oldValue, newValue) -> updateDynamicsChart());
+        dynamicsYearComboBox.valueProperty().addListener((obs, oldValue, newValue) -> updateDynamicsChart());
+        dynamicsChart.setAnimated(false);
+        dynamicsChart.setCreateSymbols(true);
+        dynamicsChart.setLegendVisible(true);
+        refreshDynamicsYears();
+        dynamicsTab.setOnSelectionChanged(event -> {
+            if (dynamicsTab.isSelected()) refreshDynamicsYears();
+        });
+    }
+
+    private void refreshDynamicsYears() {
+        Integer oldYear = dynamicsYearComboBox.getValue();
+        TreeSet<Integer> years = new TreeSet<>(Comparator.reverseOrder());
+        for (Income income : db.getAllIncomes()) {
+            if (income.getDate() != null) years.add(income.getDate().getYear());
+        }
+        for (Expense expense : db.getAllExpenses()) {
+            if (expense.getDate() != null) years.add(expense.getDate().getYear());
+        }
+        dynamicsYearComboBox.getItems().setAll(years);
+        if (oldYear != null && years.contains(oldYear)) dynamicsYearComboBox.setValue(oldYear);
+        else if (!years.isEmpty()) dynamicsYearComboBox.setValue(years.first());
+        else dynamicsYearComboBox.setValue(null);
+        updateDynamicsChart();
+    }
+
+    private void updateDynamicsChart() {
+        Integer year = dynamicsYearComboBox.getValue();
+        dynamicsChart.getData().clear();
+        if (year == null) {
+            dynamicsInfoLabel.setText("Нет финансовых операций для построения графика.");
+            return;
+        }
+
+        // Показываем только месяцы с операциями: отсутствие данных не считаем нулевыми расходами.
+        TreeSet<Integer> months = new TreeSet<>();
+        for (Income income : db.getAllIncomes()) {
+            if (income.getDate() != null && income.getDate().getYear() == year)
+                months.add(income.getDate().getMonthValue());
+        }
+        for (Expense expense : db.getAllExpenses()) {
+            if (expense.getDate() != null && expense.getDate().getYear() == year)
+                months.add(expense.getDate().getMonthValue());
+        }
+        if (months.isEmpty()) {
+            dynamicsInfoLabel.setText("Нет данных за выбранный год.");
+            return;
+        }
+
+        XYChart.Series<String, Number> incomes = new XYChart.Series<>();
+        incomes.setName("Доходы");
+        XYChart.Series<String, Number> expenses = new XYChart.Series<>();
+        expenses.setName("Расходы");
+        double totalIncome = 0;
+        double totalExpense = 0;
+        for (int month : months) {
+            double income = db.getIncomeForMonth(month, year);
+            double expense = db.getExpenseForMonth(month, year);
+            totalIncome += income;
+            totalExpense += expense;
+            String label = monthName(month);
+            incomes.getData().add(new XYChart.Data<>(label, income));
+            expenses.getData().add(new XYChart.Data<>(label, expense));
+        }
+        String mode = dynamicsModeComboBox.getValue();
+        if (!"Расходы".equals(mode)) dynamicsChart.getData().add(incomes);
+        if (!"Доходы".equals(mode)) dynamicsChart.getData().add(expenses);
+        dynamicsInfoLabel.setText("За месяцы с операциями: доходы " + formatRub(totalIncome)
+                + "  •  расходы " + formatRub(totalExpense)
+                + "  •  разница " + formatRub(totalIncome - totalExpense));
+    }
+    //endregion
+
+    //region Smart entry
+    private record SmartOperationRow(CheckBox selected, ComboBox<String> type,
+                                     TextField amount, ComboBox<String> category,
+                                     DatePicker date) {}
+
+    private void initializeSmartEntry() {
+        smartPreviewBox.setVisible(false);
+        smartPreviewBox.setManaged(false);
+        smartRecognizeButton.setOnAction(e -> recognizeSmartEntry());
+        smartSaveButton.setOnAction(e -> saveSmartEntry());
+    }
+
+    private void setSmartBusy(boolean busy) {
+        smartBusy = busy;
+        smartRecognizeButton.setDisable(busy);
+        smartSaveButton.setDisable(busy);
+        smartProgress.setVisible(busy);
+        smartProgress.setManaged(busy);
+    }
+
+    private void recognizeSmartEntry() {
+        if (smartBusy) return;
+        String input = smartInputText.getText().trim();
+        if (input.isBlank() || input.length() > 2000) {
+            smartStatusLabel.setText("Опишите от 1 до 15 операций (до 2000 символов).");
+            return;
+        }
+        smartRows.clear();
+        smartOperationsBox.getChildren().clear();
+        smartPreviewBox.setManaged(false);
+        smartPreviewBox.setVisible(false);
+        setSmartBusy(true);
+        smartStatusLabel.setText("YandexGPT распознаёт операции. Ответ может занять до 3 минут...");
+        LocalDate today = LocalDate.now();
+        Task<List<SmartEntryClient.Operation>> task = new Task<>() {
+            @Override protected List<SmartEntryClient.Operation> call() throws Exception {
+                return new SmartEntryClient().recognize(input, today);
+            }
+        };
+        task.setOnSucceeded(e -> {
+            setSmartBusy(false);
+            List<SmartEntryClient.Operation> operations = task.getValue();
+            for (SmartEntryClient.Operation op : operations) addSmartPreviewRow(op);
+            smartPreviewBox.setManaged(true);
+            smartPreviewBox.setVisible(true);
+            smartStatusLabel.setText("Распознано операций: " + operations.size()
+                    + ". Проверьте каждую строку и снимите галочки с ненужных.");
+        });
+        task.setOnFailed(e -> {
+            setSmartBusy(false);
+            Throwable ex = task.getException();
+            smartStatusLabel.setText("Не удалось распознать операции: "
+                    + (ex == null ? "неизвестная ошибка" : ex.getMessage()));
+        });
+        Thread worker = new Thread(task, "yandex-gpt-smart-entry");
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    private void addSmartPreviewRow(SmartEntryClient.Operation op) {
+        CheckBox selected = new CheckBox();
+        selected.setSelected(true);
+        ComboBox<String> type = new ComboBox<>();
+        type.getItems().setAll("Расход", "Доход");
+        type.setPrefWidth(100);
+        ComboBox<String> category = new ComboBox<>();
+        category.setPrefWidth(215);
+        type.valueProperty().addListener((obs, oldValue, newValue) -> {
+            String previous = category.getValue();
+            category.getItems().setAll("Доход".equals(newValue)
+                    ? SmartEntryClient.INCOME_CATEGORIES : SmartEntryClient.EXPENSE_CATEGORIES);
+            if (category.getItems().contains(previous)) category.setValue(previous);
+            else category.getSelectionModel().selectFirst();
+        });
+        type.setValue("income".equals(op.type()) ? "Доход" : "Расход");
+        category.setValue(op.category());
+        TextField amount = new TextField(String.format(Locale.US, "%.2f", op.amount()));
+        amount.setPrefWidth(110);
+        DatePicker date = new DatePicker(op.date());
+        date.setPrefWidth(145);
+        HBox line = new HBox(8, selected, type, amount, category, date);
+        line.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        smartOperationsBox.getChildren().add(line);
+        smartRows.add(new SmartOperationRow(selected, type, amount, category, date));
+    }
+
+    private void saveSmartEntry() {
+        if (smartBusy || smartRows.isEmpty()) return;
+        // Validate ALL chosen operations first: prevent partial save on an invalid row.
+        List<SmartEntryClient.Operation> validated = new java.util.ArrayList<>();
+        try {
+            for (int i = 0; i < smartRows.size(); i++) {
+                SmartOperationRow row = smartRows.get(i);
+                if (!row.selected().isSelected()) continue;
+                String type = row.type().getValue();
+                String category = row.category().getValue();
+                LocalDate date = row.date().getValue();
+                double amount = Double.parseDouble(row.amount().getText().trim().replace(',', '.'));
+                if (!(amount > 0) || !Double.isFinite(amount) || amount > 1_000_000_000
+                        || date == null || category == null || type == null) {
+                    throw new IllegalArgumentException("Проверьте строку №" + (i + 1));
+                }
+                boolean income = "Доход".equals(type);
+                if (!income && !"Расход".equals(type))
+                    throw new IllegalArgumentException("Неизвестный тип в строке №" + (i + 1));
+                if (!(income ? SmartEntryClient.INCOME_CATEGORIES : SmartEntryClient.EXPENSE_CATEGORIES)
+                        .contains(category))
+                    throw new IllegalArgumentException("Неверная категория в строке №" + (i + 1));
+                validated.add(new SmartEntryClient.Operation(income ? "income" : "expense", amount, category, date));
+            }
+            if (validated.isEmpty()) {
+                smartStatusLabel.setText("Отметьте хотя бы одну операцию для сохранения.");
+                return;
+            }
+            for (SmartEntryClient.Operation op : validated) {
+                if ("income".equals(op.type()))
+                    db.addIncome(db.getNextIncomeNumber(), op.amount(), op.category(), op.date());
+                else
+                    db.addExpense(db.getNextExpenseNumber(), op.amount(), op.category(), op.date());
+            }
+            db.writeDB();
+            refreshIncomeTable();
+            refreshExpenseTable();
+            smartRows.clear();
+            smartOperationsBox.getChildren().clear();
+            smartPreviewBox.setVisible(false);
+            smartPreviewBox.setManaged(false);
+            smartInputText.clear();
+            smartStatusLabel.setText("Сохранено операций: " + validated.size()
+                    + ". Таблицы и графики обновлены.");
+        } catch (NumberFormatException ex) {
+            smartStatusLabel.setText("Проверьте суммы: нужны положительные числа.");
+        } catch (RuntimeException ex) {
+            smartStatusLabel.setText("Ошибка проверки/сохранения: " + ex.getMessage());
+        }
+    }
+    //endregion
 
     //region AI budget analysis
     private void initializeAiAnalysis() {

@@ -3,10 +3,14 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.chart.BarChart?>
 <?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.LineChart?>
 <?import javafx.scene.chart.NumberAxis?>
 <?import javafx.scene.chart.PieChart?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.ScrollPane?>
@@ -220,6 +224,65 @@
                                                         <PieChart fx:id="creditOverpaymentChart" prefWidth="280" prefHeight="280" maxWidth="Infinity" maxHeight="Infinity" />
                                                     </VBox>
                                                 </HBox>
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </AnchorPane>
+                            </content>
+                        </Tab>
+                        <!-- ==================== ВКЛАДКА "ДИНАМИКА ФИНАНСОВ" ==================== -->
+                        <Tab fx:id="dynamicsTab" text="Динамика финансов">
+                            <content>
+                                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                                    <children>
+                                        <VBox spacing="14.0" style="-fx-padding: 20; -fx-background-color: transparent;" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                            <children>
+                                                <Label text="Динамика доходов и расходов" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
+                                                <HBox alignment="CENTER_LEFT" spacing="12.0">
+                                                    <children>
+                                                        <Label text="Год:" />
+                                                        <ComboBox fx:id="dynamicsYearComboBox" prefWidth="120.0" />
+                                                        <Label text="Показать:" />
+                                                        <ComboBox fx:id="dynamicsModeComboBox" prefWidth="150.0" />
+                                                    </children>
+                                                </HBox>
+                                                <LineChart fx:id="dynamicsChart" title="Финансовые показатели по месяцам" animated="false" VBox.vgrow="ALWAYS">
+                                                    <xAxis><CategoryAxis label="Месяц" /></xAxis>
+                                                    <yAxis><NumberAxis label="Рубли" forceZeroInRange="true" /></yAxis>
+                                                </LineChart>
+                                                <Label fx:id="dynamicsInfoLabel" text="Выберите год" wrapText="true" style="-fx-font-weight: bold; -fx-padding: 5 0 5 0;" />
+                                                <Label text="Показаны только месяцы, в которых есть доходы или расходы. Показатели рассчитаны по записям приложения." wrapText="true" style="-fx-text-fill: #555555;" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </AnchorPane>
+                            </content>
+                        </Tab>
+                        <!-- ==================== УМНЫЙ ВВОД ==================== -->
+                        <Tab text="Умный ввод">
+                            <content>
+                                <AnchorPane minHeight="0.0" minWidth="0.0">
+                                    <children>
+                                        <VBox spacing="15.0" style="-fx-padding: 20; -fx-background-color: transparent;" AnchorPane.topAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
+                                            <children>
+                                                <Label text="Добавление нескольких операций обычным текстом" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
+                                                <Label wrapText="true" text="Опишите одну или несколько операций. ИИ разделит их на строки; вы сможете исправить или исключить любую перед сохранением." />
+                                                <TextArea fx:id="smartInputText" prefRowCount="3" wrapText="true" promptText="Вчера такси 400 рублей, продукты 2000, коммуналка 25000, подарок 500" />
+                                                <HBox alignment="CENTER_LEFT" spacing="12.0">
+                                                    <children>
+                                                        <Button fx:id="smartRecognizeButton" text="Распознать через ИИ" />
+                                                        <ProgressIndicator fx:id="smartProgress" prefHeight="28.0" prefWidth="28.0" progress="-1.0" managed="false" visible="false" />
+                                                    </children>
+                                                </HBox>
+                                                <Label fx:id="smartStatusLabel" text="Готово к распознаванию. Для работы необходим API-ключ и интернет." wrapText="true" />
+                                                <VBox fx:id="smartPreviewBox" managed="false" visible="false" spacing="12.0" style="-fx-padding: 16; -fx-background-color: rgba(255,255,255,0.6); -fx-background-radius: 8;">
+                                                    <children>
+                                                        <Label text="Предпросмотр: проверьте и при необходимости исправьте" style="-fx-font-weight: bold; -fx-font-size: 15px;" />
+                                                        <Label text="Добавить в базу    Тип           Сумма (₽)       Категория / источник                Дата" style="-fx-font-weight: bold;" />
+                                                        <VBox fx:id="smartOperationsBox" spacing="8.0" />
+                                                        <Button fx:id="smartSaveButton" text="Сохранить отмеченные операции" />
+                                                    </children>
+                                                </VBox>
                                             </children>
                                         </VBox>
                                     </children>
